@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Technician Directory – Smart Campus{% endblock %}
+{% block page_title %}Maintenance Staff Roster{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  {% for t in technicians %}
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-9 h-9 rounded bg-slate-800 text-white flex items-center justify-center font-semibold text-xs">{{ t.username[0].upper() }}</div>
+      <div>
+        <p class="font-semibold text-sm text-slate-800">{{ t.username }}</p>
+        <p class="text-[11px] text-blue-700 font-medium">{{ t.team or 'General Maintenance' }}</p>
+      </div>
+    </div>
+    <div class="space-y-1 text-xs text-slate-600 mb-3 border-t border-slate-100 pt-2 font-mono">
+      {% if t.phone %}<p>Tel: <a href="tel:{{ t.phone }}" class="text-blue-600 hover:underline">{{ t.phone }}</a></p>{% endif %}
+      <p>Email: <a href="mailto:{{ t.email }}" class="text-blue-600 hover:underline truncate block">{{ t.email }}</a></p>
+    </div>
+    <div class="grid grid-cols-3 gap-1 text-center bg-slate-50 border border-slate-100 rounded p-2 text-xs">
+      <div><p class="font-bold text-slate-800">{{ t.open_count or 0 }}</p><p class="text-[10px] text-slate-400 uppercase">Open</p></div>
+      <div><p class="font-bold text-amber-700">{{ t.inprog_count or 0 }}</p><p class="text-[10px] text-slate-400 uppercase">Active</p></div>
+      <div><p class="font-bold text-emerald-700">{{ t.resolved_count or 0 }}</p><p class="text-[10px] text-slate-400 uppercase">Done</p></div>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-slate-400 text-xs col-span-4 py-8 text-center">No technician accounts found in database.</p>
+  {% endfor %}
+</div>
+{% endblock %}
