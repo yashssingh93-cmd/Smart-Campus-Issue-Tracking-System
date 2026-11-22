@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard{% endblock %}
+{% block page_title %}Service Request Dashboard{% endblock %}
+{% block content %}
+<div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
+  {% for label, val in [('Total Filed', total), ('Open', open_c), ('In Progress', prog_c), ('Resolved', res_c), ('Overdue', overdue_c)] %}
+  <div class="bg-white rounded-lg border border-slate-200 p-3 shadow-sm">
+    <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">{{ label }}</p>
+    <p class="text-2xl font-bold text-slate-800">{{ val }}</p>
+  </div>
+  {% endfor %}
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+  <div class="lg:col-span-2 bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+    <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-3">
+      <div>
+        <h2 class="font-semibold text-sm text-slate-800">My Service Requests</h2>
+        <p class="text-slate-400 text-xs">Tracking facility complaints filed under your account</p>
+      </div>
+      <a href="{{ url_for('submit_issue') }}" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded font-medium transition">+ New Issue</a>
+    </div>
+    {% if issues %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="text-slate-500 bg-slate-50 border-y border-slate-200">
+          <tr><th class="py-2.5 px-2">Ticket Title</th><th>Category</th><th>Priority</th><th>Status</th><th>SLA Deadline</th></tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for i in issues %}
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-2.5 px-2">
+              <a href="{{ url_for('issue_detail', issue_id=i.id) }}" class="text-blue-600 hover:underline font-medium">{{ i.title | truncate(38) }}</a>
+              {% if is_overdue(i) %}<span class="badge-overdue ml-1.5">OVERDUE</span>{% endif %}
+            </td>
+            <td class="text-slate-600">{{ i.category }}</td>
+            <td><span class="prio-{{ i.priority|lower }}">{{ i.priority }}</span></td>
+            <td><span class="badge-{{ i.status.lower().replace(' ', '') }}">{{ i.status }}</span></td>
+            <td class="text-slate-500 font-mono">{{ i.sla_deadline[:16] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-center py-8 text-xs text-slate-500">No issues submitted yet. <a href="{{ url_for('submit_issue') }}" class="text-blue-600 underline">Submit your first request</a>.</p>
+    {% endif %}
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+    <h2 class="font-semibold text-sm text-slate-800 mb-1">Status Updates & History</h2>
+    <p class="text-slate-400 text-xs mb-3 border-b border-slate-100 pb-2">Recent activity logged against your tickets</p>
+    <div class="space-y-3 max-h-80 overflow-y-auto text-xs">
+      {% for n in notifications %}
+      <div class="border-b border-slate-100 pb-2">
+        <p class="text-slate-700"><span class="font-medium text-slate-900">{{ n.actor }}</span>: {{ n.action }}</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">{{ n.title | truncate(30) }} &bull; {{ n.created_at[:16] }}</p>
+      </div>
+      {% else %}
+      <p class="text-slate-400 py-4 text-center">No recent activity.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
