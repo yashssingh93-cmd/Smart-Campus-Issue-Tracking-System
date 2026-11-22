@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Technician Work Orders{% endblock %}
+{% block page_title %}Assigned Work Orders{% endblock %}
+{% block content %}
+<div class="bg-slate-900 rounded-lg p-4 text-white flex justify-between items-center mb-5 border border-slate-800">
+  <div class="flex items-center gap-3">
+    <div class="w-9 h-9 rounded bg-blue-600 flex items-center justify-center font-bold text-sm">{{ tech.username[0].upper() }}</div>
+    <div>
+      <p class="font-semibold text-sm">{{ tech.username }}</p>
+      <p class="text-slate-400 text-xs">{{ tech.team or 'Campus Maintenance Team' }}</p>
+    </div>
+  </div>
+  <div class="text-right text-xs text-slate-300 font-mono">
+    {% if tech.phone %}<p>Tel: {{ tech.phone }}</p>{% endif %}
+    <p>{{ tech.email }}</p>
+  </div>
+</div>
+<div class="grid grid-cols-4 gap-3 mb-5">
+  {% for label, val in [('Total Assigned', total), ('Open / Pending', open_c), ('In Progress', prog_c), ('Completed', res_c)] %}
+  <div class="bg-white rounded-lg border border-slate-200 p-3 shadow-sm">
+    <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">{{ label }}</p>
+    <p class="text-xl font-bold text-slate-800">{{ val }}</p>
+  </div>
+  {% endfor %}
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+  <div class="lg:col-span-2 bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+    <div class="border-b border-slate-100 pb-3 mb-3">
+      <h2 class="font-semibold text-sm text-slate-800">Assigned Service Requests</h2>
+      <p class="text-slate-400 text-xs">Work tickets routed to your maintenance profile</p>
+    </div>
+    {% if issues %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="text-slate-500 bg-slate-50 border-y border-slate-200">
+          <tr><th class="py-2.5 px-2">Work Order</th><th>Priority</th><th>Status</th><th>SLA Deadline</th><th>Student</th></tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for i in issues %}
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-2.5 px-2">
+              <a href="{{ url_for('technician_issue_detail', issue_id=i.id) }}" class="text-blue-600 hover:underline font-medium">{{ i.title | truncate(35) }}</a>
+              {% if is_overdue(i) %}<span class="badge-overdue ml-1.5">OVERDUE</span>{% endif %}
+            </td>
+            <td><span class="prio-{{ i.priority|lower }}">{{ i.priority }}</span></td>
+            <td><span class="badge-{{ i.status.lower().replace(' ', '') }}">{{ i.status }}</span></td>
+            <td class="text-slate-500 font-mono">{{ i.sla_deadline[:16] }}</td>
+            <td class="text-slate-600">{{ i.reporter }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-center py-8 text-xs text-slate-400">No active work orders assigned to your account.</p>
+    {% endif %}
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+    <h2 class="font-semibold text-sm text-slate-800 mb-1">Recent Activity Feed</h2>
+    <p class="text-slate-400 text-xs mb-3 border-b border-slate-100 pb-2">Status transitions on your assigned tickets</p>
+    <div class="space-y-3 max-h-80 overflow-y-auto text-xs">
+      {% for l in recent_logs %}
+      <div class="border-b border-slate-100 pb-2">
+        <p class="text-slate-700"><span class="font-medium text-slate-900">{{ l.actor }}</span>: {{ l.action }}</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">{{ l.title | truncate(28) }} &bull; {{ l.created_at[:16] }}</p>
+      </div>
+      {% else %}
+      <p class="text-slate-400 py-4 text-center">No recent activity.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

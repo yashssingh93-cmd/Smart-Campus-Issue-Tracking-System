@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Task #{{ issue.id }} – Technician Portal{% endblock %}
+{% block page_title %}Service Order #{{ issue.id }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-4 text-xs">
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-5">
+    <div class="flex justify-between items-start mb-2">
+      <div>
+        <span class="font-mono text-slate-400">Order #{{ issue.id }}</span>
+        <h2 class="text-base font-semibold text-slate-800">{{ issue.title }}</h2>
+      </div>
+      <a href="{{ url_for('technician_dashboard') }}" class="text-slate-500 hover:text-slate-800">&larr; Return to Task List</a>
+    </div>
+    <div class="flex gap-2 items-center mb-3">
+      <span class="badge-{{ issue.status.lower().replace(' ', '') }}">{{ issue.status }}</span>
+      <span class="prio-{{ issue.priority|lower }}">{{ issue.priority }}</span>
+      {% if overdue %}<span class="badge-overdue">OVERDUE SLA</span>{% endif %}
+    </div>
+    <div class="bg-slate-50 border border-slate-200 p-3.5 rounded mb-3 text-slate-700 leading-relaxed">{{ issue.description }}</div>
+    <div class="grid grid-cols-3 gap-2 border-t border-slate-100 pt-2.5">
+      <div><span class="text-slate-400">Category:</span> <p class="font-semibold text-slate-700">{{ issue.category }}</p></div>
+      <div><span class="text-slate-400">Location:</span> <p class="font-semibold text-slate-700">{{ issue.location }}</p></div>
+      <div><span class="text-slate-400">Target SLA:</span> <p class="font-semibold {% if overdue %}text-rose-700{% else %}text-slate-700{% endif %} font-mono">{{ issue.sla_deadline[:16] }}</p></div>
+    </div>
+  </div>
+
+  {% if reporter %}
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-3.5 flex justify-between items-center">
+    <div>
+      <p class="font-semibold text-slate-800">Originating Student: {{ reporter.username }}</p>
+      <p class="text-slate-400 text-[11px]">Direct inquiry channel</p>
+    </div>
+    <a href="mailto:{{ reporter.email }}" class="px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-300 rounded hover:bg-slate-200 font-mono">Contact: {{ reporter.email }}</a>
+  </div>
+  {% endif %}
+
+  {% if issue.status != 'Resolved' %}
+  <form method="POST" action="{{ url_for('technician_update_status', issue_id=issue.id) }}" class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 flex gap-3 items-end">
+    <div class="flex-1">
+      <label class="block font-medium text-slate-700 mb-1">Update Execution Status</label>
+      <select name="status" class="w-full p-2 border border-slate-300 rounded bg-white outline-none focus:border-blue-600">
+        <option value="Open" {% if issue.status=='Open' %}selected{% endif %}>Open / Awaiting Field Work</option>
+        <option value="In Progress" {% if issue.status=='In Progress' %}selected{% endif %}>In Progress / Under Investigation</option>
+        <option value="Resolved">Resolved / Work Completed</option>
+      </select>
+    </div>
+    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded transition">Save Status</button>
+  </form>
+  {% else %}
+  <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-800 font-medium">Work order resolved on {{ issue.resolved_at[:16] }}</div>
+  {% endif %}
+
+  {% if feedback %}
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+    <p class="font-semibold text-slate-700 mb-1">Student Feedback Rating: {{ feedback.rating }} / 5</p>
+    {% if feedback.comment %}<p class="italic text-slate-600 bg-slate-50 p-2 rounded">"{{ feedback.comment }}"</p>{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+    <h3 class="font-semibold text-slate-800 mb-2 border-b border-slate-100 pb-2">Service History & Activity Log</h3>
+    <div class="space-y-1.5 max-h-40 overflow-y-auto">
+      {% for l in logs %}
+      <div class="border-b border-slate-100 pb-1.5">
+        <p class="text-slate-800"><span class="font-medium text-slate-900">{{ l.actor }}</span>: {{ l.action }}</p>
+        <p class="text-[10px] text-slate-400 font-mono">{{ l.created_at[:16] }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
