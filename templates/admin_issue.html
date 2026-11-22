@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Manage Issue #{{ issue.id }}{% endblock %}
+{% block page_title %}Ticket Management #{{ issue.id }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-4 text-xs">
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-5">
+    <div class="flex justify-between items-start mb-2">
+      <div>
+        <span class="font-mono text-slate-400">Record #{{ issue.id }}</span>
+        <h2 class="text-base font-semibold text-slate-800">{{ issue.title }}</h2>
+      </div>
+      <a href="{{ url_for('admin_dashboard') }}" class="text-slate-500 hover:text-slate-800">&larr; Return to Dashboard</a>
+    </div>
+    <div class="bg-slate-50 border border-slate-200 p-3 rounded mb-3 text-slate-700 leading-relaxed">{{ issue.description }}</div>
+    <div class="grid grid-cols-3 gap-2 border-t border-slate-100 pt-2.5">
+      <div><span class="text-slate-400">Category:</span> <p class="font-semibold text-slate-700">{{ issue.category }}</p></div>
+      <div><span class="text-slate-400">Location:</span> <p class="font-semibold text-slate-700">{{ issue.location }}</p></div>
+      <div><span class="text-slate-400">SLA Target:</span> <p class="font-semibold {% if overdue %}text-rose-700{% else %}text-slate-700{% endif %} font-mono">{{ issue.sla_deadline[:16] }}</p></div>
+    </div>
+  </div>
+
+  <form method="POST" action="{{ url_for('admin_issue', issue_id=issue.id) }}" class="bg-white rounded-lg shadow-sm border border-slate-200 p-5 space-y-3.5">
+    <div class="border-b border-slate-100 pb-2">
+      <h3 class="font-semibold text-sm text-slate-800">Administrative Routing & Overrides</h3>
+      <p class="text-slate-400 text-[11px]">Assign responsibility and adjust service priority</p>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block font-medium text-slate-700 mb-1">Maintenance Team</label>
+        <select name="assigned_team" id="team-sel" onchange="filterTech()" class="w-full p-2 border border-slate-300 rounded bg-white outline-none focus:border-blue-600">
+          <option value="">— Unassigned —</option>
+          {% for t in ['IT & Network Team', 'Electrical & AC Team', 'Civil & Plumbing Team', 'Lab Support Team'] %}
+          <option value="{{ t }}" {% if issue.assigned_team==t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block font-medium text-slate-700 mb-1">Assigned Technician</label>
+        <select name="assigned_technician" id="tech-sel" class="w-full p-2 border border-slate-300 rounded bg-white outline-none focus:border-blue-600">
+          <option value="">— Unassigned —</option>
+          {% for tech in technicians %}
+          <option value="{{ tech.id }}" data-team="{{ tech.team }}" {% if issue.assigned_technician==tech.id %}selected{% endif %}>
+            {{ tech.username }} ({{ tech.team }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block font-medium text-slate-700 mb-1">Priority (Recalculates SLA)</label>
+        <select name="priority" class="w-full p-2 border border-slate-300 rounded bg-white outline-none focus:border-blue-600">
+          {% for p in ['Critical', 'High', 'Medium', 'Low'] %}<option value="{{ p }}" {% if issue.priority==p %}selected{% endif %}>{{ p }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block font-medium text-slate-700 mb-1">Workflow Status</label>
+        <select name="status" class="w-full p-2 border border-slate-300 rounded bg-white outline-none focus:border-blue-600">
+          {% for s in ['Open', 'In Progress', 'Resolved'] %}<option value="{{ s }}" {% if issue.status==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-2 pt-2">
+      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded transition">Save Updates</button>
+      <a href="{{ url_for('admin_dashboard') }}" class="px-4 py-2 border border-slate-300 rounded text-slate-600 hover:bg-slate-50">Cancel</a>
+    </div>
+  </form>
+
+  {% if feedback %}
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+    <p class="font-semibold text-slate-700 mb-1">Student Feedback Rating: {{ feedback.rating }} / 5</p>
+    {% if feedback.comment %}<p class="italic text-slate-600 bg-slate-50 p-2 rounded">"{{ feedback.comment }}"</p>{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+    <h3 class="font-semibold text-slate-800 mb-2 border-b border-slate-100 pb-2">Ticket History & Audit Log</h3>
+    <div class="space-y-1.5 max-h-40 overflow-y-auto">
+      {% for l in logs %}
+      <div class="border-b border-slate-100 pb-1.5">
+        <p class="text-slate-800"><span class="font-medium text-slate-900">{{ l.actor }}</span>: {{ l.action }}</p>
+        <p class="text-[10px] text-slate-400 font-mono">{{ l.created_at[:16] }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function filterTech(){
+  const tm = document.getElementById('team-sel').value;
+  const sel = document.getElementById('tech-sel');
+  sel.querySelectorAll('option').forEach(o => { if(o.value) o.hidden = tm && o.dataset.team !== tm; });
+  if(sel.selectedOptions[0] && sel.selectedOptions[0].hidden) sel.value = '';
+}
+window.addEventListener('DOMContentLoaded', filterTech);
+</script>
+{% endblock %}

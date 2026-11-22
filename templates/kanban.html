@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Workflow Board – Smart Campus{% endblock %}
+{% block page_title %}Kanban Issue Workflow{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="kanban-board">
+  {% for col_title, col_status, col_border, col_issues in [('Open / Backlog', 'Open', 'border-t-slate-500', open_issues), ('In Progress', 'In Progress', 'border-t-amber-500', prog_issues), ('Resolved / Closed', 'Resolved', 'border-t-emerald-500', res_issues)] %}
+  <div class="flex flex-col bg-slate-200/60 rounded-lg p-2.5 border border-slate-300 border-t-4 {{ col_border }}">
+    <div class="flex justify-between items-center mb-2 px-1">
+      <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">{{ col_title }}</h3>
+      <span class="bg-white border border-slate-300 text-slate-600 px-2 py-0.5 rounded text-[11px] font-semibold" id="cnt-{{ col_status|lower|replace(' ', '') }}">{{ col_issues|length }}</span>
+    </div>
+    <div id="col-{{ col_status }}" class="flex-1 space-y-2 min-h-[460px] p-1 rounded transition"
+         ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="drop(event, '{{ col_status }}')">
+      {% for i in col_issues %}
+      <div id="card-{{ i.id }}" draggable="true" ondragstart="event.dataTransfer.setData('text/plain', '{{ i.id }}')"
+           class="kanban-card bg-white p-3 rounded border border-slate-200 shadow-sm text-xs space-y-2 hover:border-slate-300 transition">
+        <div class="flex justify-between items-start">
+          <span class="font-semibold text-slate-800 leading-snug">{{ i.title | truncate(38) }}</span>
+          <span class="font-mono text-slate-400 text-[11px]">#{{ i.id }}</span>
+        </div>
+        <div class="flex gap-1.5 items-center">
+          <span class="prio-{{ i.priority|lower }}">{{ i.priority }}</span>
+          {% if is_overdue(i) %}<span class="badge-overdue">OVERDUE</span>{% endif %}
+        </div>
+        <div class="text-[11px] text-slate-500 space-y-0.5">
+          <p><span class="text-slate-400">Loc:</span> {{ i.location }}</p>
+          <p><span class="text-slate-400">User:</span> {{ i.reporter }}</p>
+          {% if i.assigned_team %}<p class="text-blue-700 font-medium">{{ i.assigned_team }}</p>{% endif %}
+        </div>
+        <div class="border-t border-slate-100 pt-2 flex items-center justify-between">
+          <select class="text-[11px] border border-slate-200 rounded px-1.5 py-0.5 bg-slate-50 text-slate-700 outline-none" onchange="moveCard({{ i.id }}, this.value)">
+            <option value="Open" {% if i.status=='Open' %}selected{% endif %}>To: Open</option>
+            <option value="In Progress" {% if i.status=='In Progress' %}selected{% endif %}>To: In Progress</option>
+            <option value="Resolved" {% if i.status=='Resolved' %}selected{% endif %}>To: Resolved</option>
+          </select>
+          <a href="{{ url_for('admin_issue', issue_id=i.id) }}" class="text-[11px] text-blue-600 hover:underline">Manage &rarr;</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white text-xs px-3.5 py-2 rounded shadow-lg border border-slate-700 hidden"></div>
+{% endblock %}
+{% block scripts %}
+<script>
+function drop(e, status){
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  const id = e.dataTransfer.getData('text/plain');
+  if(id) moveCard(id, status);
+}
+function moveCard(id, status){
+  fetch(`/api/issue/${id}/status`, {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({status: status})
+  }).then(r => r.json()).then(d => {
+    if(d.success){
+      const card = document.getElementById(`card-${id}`);
+      const targetCol = document.getElementById(`col-${status}`);
+      if(card && targetCol){
+        targetCol.appendChild(card);
+        card.querySelector('select').value = status;
+      }
+      showToast(`Status updated: Issue #${id} &rarr; ${status}`);
+    } else alert(d.error || 'Failed');
+  });
+}
+function showToast(m){
+  const t = document.getElementById('toast');
+  t.innerHTML = m; t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 2200);
+}
+</script>
+{% endblock %}
