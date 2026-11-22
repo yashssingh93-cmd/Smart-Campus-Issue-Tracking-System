@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Smart Campus Portal{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .kanban-card { cursor: grab; }
+    .kanban-card:active { cursor: grabbing; }
+    .drag-over { outline: 2px dashed #6366f1; background: #f8fafc; }
+    .badge-open { display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+    .badge-inprogress { display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .badge-resolved { display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .badge-overdue { display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; letter-spacing: 0.05em; }
+    .prio-critical { display: inline-flex; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #ef4444; color: #fff; }
+    .prio-high { display: inline-flex; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #f97316; color: #fff; }
+    .prio-medium { display: inline-flex; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #eab308; color: #422006; }
+    .prio-low { display: inline-flex; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #64748b; color: #fff; }
+  </style>
+</head>
+<body class="h-full bg-slate-100 text-slate-800 antialiased">
+{% if session.get('user_id') %}
+<div class="flex h-screen overflow-hidden">
+  <aside class="w-60 flex-shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col">
+    <div class="px-5 py-4 border-b border-slate-800 flex items-center gap-3">
+      <div class="w-8 h-8 rounded bg-blue-600 flex items-center justify-center text-white font-bold text-xs">SC</div>
+      <div>
+        <p class="text-slate-100 font-semibold text-sm leading-tight">Campus Services</p>
+        <p class="text-slate-400 text-[11px]">Issue Tracking System</p>
+      </div>
+    </div>
+    <div class="px-4 py-3 border-b border-slate-800 flex items-center gap-2.5">
+      <div class="w-7 h-7 rounded bg-slate-700 flex items-center justify-center text-slate-200 text-xs font-semibold">{{ session.username[0].upper() }}</div>
+      <div class="truncate">
+        <p class="text-slate-200 text-xs font-medium truncate">{{ session.username }}</p>
+        <p class="text-slate-400 text-[10px] uppercase tracking-wider">{{ session.role }}</p>
+      </div>
+    </div>
+    <nav class="flex-1 px-3 py-3 space-y-1 text-xs">
+      {% if session.role == 'admin' %}
+        <a href="{{ url_for('admin_dashboard') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-md {% if request.endpoint == 'admin_dashboard' %}bg-slate-800 text-white font-medium{% else %}text-slate-300 hover:bg-slate-800/60{% endif %}">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+          Dashboard
+        </a>
+        <a href="{{ url_for('kanban') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-md {% if request.endpoint == 'kanban' %}bg-slate-800 text-white font-medium{% else %}text-slate-300 hover:bg-slate-800/60{% endif %}">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+          Kanban Board
+        </a>
+        <a href="{{ url_for('admin_technicians') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-md {% if request.endpoint == 'admin_technicians' %}bg-slate-800 text-white font-medium{% else %}text-slate-300 hover:bg-slate-800/60{% endif %}">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          Technicians
+        </a>
+      {% elif session.role == 'technician' %}
+        <a href="{{ url_for('technician_dashboard') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-md {% if request.endpoint == 'technician_dashboard' %}bg-slate-800 text-white font-medium{% else %}text-slate-300 hover:bg-slate-800/60{% endif %}">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          My Tasks
+        </a>
+      {% else %}
+        <a href="{{ url_for('student_dashboard') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-md {% if request.endpoint == 'student_dashboard' %}bg-slate-800 text-white font-medium{% else %}text-slate-300 hover:bg-slate-800/60{% endif %}">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          My Dashboard
+        </a>
+        <a href="{{ url_for('submit_issue') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-md {% if request.endpoint == 'submit_issue' %}bg-slate-800 text-white font-medium{% else %}text-slate-300 hover:bg-slate-800/60{% endif %}">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Report Issue
+        </a>
+      {% endif %}
+    </nav>
+    <div class="p-3 border-t border-slate-800">
+      <a href="{{ url_for('logout') }}" class="flex items-center gap-2 px-3 py-2 rounded-md text-xs text-rose-300 hover:bg-rose-950/40">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Sign Out
+      </a>
+    </div>
+  </aside>
+
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <header class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
+      <h1 class="text-sm font-semibold text-slate-800">{% block page_title %}{% endblock %}</h1>
+      <span class="text-xs text-slate-500 font-mono">Agile Scrum PBL &bull; B.Tech CSE</span>
+    </header>
+    <div class="px-6 pt-3">
+      {% with msgs = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in msgs %}
+          <div class="mb-2 px-3 py-2 rounded text-xs border {% if cat=='success' %}bg-emerald-50 text-emerald-800 border-emerald-200{% elif cat=='danger' %}bg-rose-50 text-rose-800 border-rose-200{% else %}bg-blue-50 text-blue-800 border-blue-200{% endif %}">{{ msg }}</div>
+        {% endfor %}
+      {% endwith %}
+    </div>
+    <main class="flex-1 overflow-y-auto px-6 py-4">{% block content %}{% endblock %}</main>
+  </div>
+</div>
+{% else %}
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}
+    <div class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm space-y-1">
+      {% for cat, msg in msgs %}
+        <div class="px-3 py-2 rounded text-xs shadow border {% if cat=='success' %}bg-emerald-50 text-emerald-800 border-emerald-200{% elif cat=='danger' %}bg-rose-50 text-rose-800 border-rose-200{% else %}bg-blue-50 text-blue-800 border-blue-200{% endif %}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>
